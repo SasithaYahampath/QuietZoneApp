@@ -26,7 +26,21 @@ class _MapScreenState extends State<MapScreen> {
   Widget build(BuildContext context) {
     final ctrl = context.watch<AppController>();
     final userPos = ctrl.currentCoords;
-    const defaultCenter = LatLng(6.9271, 79.8612);
+    // Center of Sri Lanka to view all libraries initially
+    const defaultCenter = LatLng(7.8731, 80.7718);
+
+    // Check if we need to route to a specific spot automatically
+    if (ctrl.spotToRoute != null) {
+      final spot = ctrl.spotToRoute!;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ctrl.clearRouteTrigger();
+        if (userPos != null) {
+          final dest = LatLng(spot.lat, spot.lng);
+          _mapController.move(dest, 16);
+          _fetchAndShowRoute(origin: userPos, dest: dest);
+        }
+      });
+    }
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 100),
@@ -48,7 +62,7 @@ class _MapScreenState extends State<MapScreen> {
                 mapController: _mapController,
                 options: MapOptions(
                   initialCenter: userPos ?? defaultCenter,
-                  initialZoom: 15,
+                  initialZoom: userPos != null ? 15 : 7.5,
                 ),
                 children: [
                   TileLayer(
@@ -176,6 +190,69 @@ class _MapScreenState extends State<MapScreen> {
                                 size: const Size(10, 6),
                                 painter:
                                     _TrianglePainter(const Color(0xFF7C3AED)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+
+                  // ── noisy spots (red) ─────────────────────────────────
+                  MarkerLayer(
+                    markers: ctrl.noisySpots.map((spot) {
+                      final pos = LatLng(spot.lat, spot.lng);
+                      return Marker(
+                        point: pos,
+                        width: 180,
+                        height: 60,
+                        alignment: Alignment.topCenter,
+                        child: GestureDetector(
+                          onTap: () {
+                            _mapController.move(pos, 16);
+                            _showSpotSheet(context, spot, isDetected: false);
+                          },
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFEF4444),
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xFFEF4444)
+                                          .withValues(alpha: 0.4),
+                                      blurRadius: 6,
+                                      offset: const Offset(0, 2),
+                                    )
+                                  ],
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.warning_rounded,
+                                        color: Colors.white, size: 12),
+                                    const SizedBox(width: 4),
+                                    Flexible(
+                                      child: Text(
+                                        spot.name,
+                                        style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w600),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              CustomPaint(
+                                size: const Size(10, 6),
+                                painter:
+                                    _TrianglePainter(const Color(0xFFEF4444)),
                               ),
                             ],
                           ),
