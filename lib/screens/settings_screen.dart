@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import '../services/app_controller.dart';
+import '../services/auth_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -27,6 +29,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     final ctrl = context.watch<AppController>();
 
+    final user = FirebaseAuth.instance.currentUser;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 100),
       child: Column(
@@ -38,6 +42,75 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Text('Settings',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
           ]),
+          const SizedBox(height: 16),
+
+          // ── User profile card ────────────────────────────────────────────
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF2563EB), Color(0xFF7C3AED)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF2563EB).withValues(alpha: 0.3),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 26,
+                  backgroundColor: Colors.white24,
+                  child: Text(
+                    (user?.displayName?.isNotEmpty == true
+                            ? user!.displayName![0]
+                            : user?.email?[0] ?? '?')
+                        .toUpperCase(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        user?.displayName ?? 'User',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        user?.email ?? '',
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 13,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.verified_rounded,
+                    color: Colors.white70, size: 20),
+              ],
+            ),
+          ),
+
           const SizedBox(height: 20),
 
           // ── Noise Limit ──────────────────────────────────────────────────
@@ -214,6 +287,57 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: const Text(
               '🔒 Privacy: Microphone is used only for real-time dB measurement. No audio is recorded or uploaded. Location is used only for place name and map display.',
               style: TextStyle(fontSize: 12, color: Color(0xFF475569)),
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // ── Sign Out ──────────────────────────────────────────────────────
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () async {
+                final confirmed = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20)),
+                    title: const Text('Sign Out',
+                        style: TextStyle(fontWeight: FontWeight.w700)),
+                    content:
+                        const Text('Are you sure you want to sign out?'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        child: const Text('Cancel'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, true),
+                        child: const Text('Sign Out',
+                            style: TextStyle(color: Color(0xFFEF4444))),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirmed == true) {
+                  await AuthService.signOut();
+                }
+              },
+              icon: const Icon(Icons.logout_rounded, color: Color(0xFFEF4444)),
+              label: const Text(
+                'Sign Out',
+                style: TextStyle(
+                  color: Color(0xFFEF4444),
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                side: const BorderSide(color: Color(0xFFEF4444), width: 1.5),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(40)),
+              ),
             ),
           ),
         ],

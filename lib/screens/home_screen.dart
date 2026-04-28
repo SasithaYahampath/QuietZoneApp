@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:latlong2/latlong.dart';
 import '../services/app_controller.dart';
 import '../models/noise_record.dart';
 
@@ -21,47 +22,24 @@ class HomeScreen extends StatelessWidget {
           const SizedBox(height: 16),
 
           // ── Action buttons ────────────────────────────────────────────────
-          Row(children: [
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: () => DefaultTabController.of(context).animateTo(1),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2563EB),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 13),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30)),
-                ),
-                icon: const Icon(Icons.map_rounded, size: 18),
-                label: const Text('Find Quieter Place',
-                    style: TextStyle(fontWeight: FontWeight.w600)),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                _showNearestSpots(context, ctrl);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF2563EB),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 13),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30)),
               ),
+              icon: const Icon(Icons.map_rounded, size: 18),
+              label: const Text('Find Quieter Place',
+                  style: TextStyle(fontWeight: FontWeight.w600)),
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                          '🎧 Lower your volume for better hearing health.'),
-                      duration: Duration(seconds: 3),
-                    ),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF7C3AED),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 13),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30)),
-                ),
-                icon: const Icon(Icons.headphones_rounded, size: 18),
-                label: const Text('Headphones',
-                    style: TextStyle(fontWeight: FontWeight.w600)),
-              ),
-            ),
-          ]),
+          ),
           const SizedBox(height: 16),
 
           // ── Alert banner ──────────────────────────────────────────────────
@@ -149,6 +127,86 @@ class HomeScreen extends StatelessWidget {
           // ── Quiet locations card ──────────────────────────────────────────
           _QuietLocationsCard(ctrl: ctrl),
         ],
+      ),
+    );
+  }
+
+  void _showNearestSpots(BuildContext context, AppController ctrl) {
+    if (ctrl.currentCoords == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please update your location on the map first.')),
+      );
+      return;
+    }
+
+    // Combine all spots and calculate distance
+    final allSpots = [...ctrl.quietSpots, ...ctrl.detectedQuietSpots];
+    const distanceCalc = Distance();
+    
+    // Create a list of Map containing spot and its distance
+    final spotsWithDistance = allSpots.map((spot) {
+      final dist = distanceCalc.distance(
+        ctrl.currentCoords!,
+        LatLng(spot.lat, spot.lng),
+      );
+      return {'spot': spot, 'distance': dist};
+    }).toList();
+
+    // Sort by distance ascending
+    spotsWithDistance.sort((a, b) => 
+        (a['distance'] as double).compareTo(b['distance'] as double));
+
+    // Take top 3
+    final top3 = spotsWithDistance.take(3).toList();
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Nearest Quiet Spots',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Select a location to view the route on the map.',
+              style: TextStyle(color: Color(0xFF64748B), fontSize: 14),
+            ),
+            const SizedBox(height: 16),
+            ...top3.map((item) {
+              final spot = item['spot'] as QuietSpot;
+              final dist = item['distance'] as double;
+              final distStr = dist < 1000 
+                  ? '${dist.toStringAsFixed(0)} m' 
+                  : '${(dist / 1000).toStringAsFixed(1)} km';
+              
+              return ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const CircleAvatar(
+                  backgroundColor: Color(0xFFEFF6FF),
+                  child: Icon(Icons.location_on_rounded, color: Color(0xFF2563EB), size: 20),
+                ),
+                title: Text(spot.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: Text('Distance: $distStr • ${spot.avgDb.toStringAsFixed(0)} dB average'),
+                trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Color(0xFF94A3B8)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  ctrl.triggerRoute(spot);
+                  ctrl.setTabIndex(1);
+                },
+              );
+            }),
+            const SizedBox(height: 10),
+          ],
+        ),
       ),
     );
   }
