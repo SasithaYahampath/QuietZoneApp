@@ -37,13 +37,27 @@ class QuietZoneApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ctrl = context.watch<AppController>();
     return MaterialApp(
       title: 'Quiet Zone',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF2563EB)),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF2563EB),
+          brightness: Brightness.light,
+        ),
         useMaterial3: true,
+        scaffoldBackgroundColor: const Color(0xFFF1F5F9),
       ),
+      darkTheme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF2563EB),
+          brightness: Brightness.dark,
+        ),
+        useMaterial3: true,
+        scaffoldBackgroundColor: const Color(0xFF0F172A),
+      ),
+      themeMode: ctrl.settings.isDarkMode ? ThemeMode.dark : ThemeMode.light,
       home: firebaseError != null
           ? FirebaseErrorScreen(error: firebaseError!)
           : const AuthGate(),
@@ -164,15 +178,15 @@ class _SplashScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: Color(0xFF0F172A),
+    return Scaffold(
+      backgroundColor: const Color(0xFF0F172A),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('🔊', style: TextStyle(fontSize: 56)),
-            SizedBox(height: 20),
-            Text(
+            Image.asset('assets/logo.png', width: 80, height: 80),
+            const SizedBox(height: 20),
+            const Text(
               'Quiet Zone',
               style: TextStyle(
                 color: Colors.white,
@@ -181,8 +195,8 @@ class _SplashScreen extends StatelessWidget {
                 letterSpacing: -0.5,
               ),
             ),
-            SizedBox(height: 32),
-            CircularProgressIndicator(
+            const SizedBox(height: 32),
+            const CircularProgressIndicator(
               color: Color(0xFF2563EB),
               strokeWidth: 3,
             ),
@@ -228,7 +242,8 @@ class _MainShellState extends State<MainShell>
     _tabController = TabController(length: _tabs.length, vsync: this);
     // Listen for tab changes triggered by swiping (if any) or controller logic
     _tabController.addListener(() {
-      if (!_tabController.indexIsChanging && _currentIndex != _tabController.index) {
+      if (!_tabController.indexIsChanging &&
+          _currentIndex != _tabController.index) {
         setState(() => _currentIndex = _tabController.index);
         context.read<AppController>().setTabIndex(_tabController.index);
       }
@@ -278,6 +293,7 @@ class _MainShellState extends State<MainShell>
   Widget build(BuildContext context) {
     final user = AuthService.currentUser;
     final ctrl = context.watch<AppController>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // Sync tab controller with global state
     if (_tabController.index != ctrl.currentTabIndex) {
@@ -285,8 +301,12 @@ class _MainShellState extends State<MainShell>
       _currentIndex = ctrl.currentTabIndex;
     }
 
+    final isVeryNoisy = ctrl.isVeryNoisy;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF1F5F9),
+      backgroundColor: isVeryNoisy
+          ? (isDark ? const Color(0xFF450A0A) : const Color(0xFFFEF2F2))
+          : Theme.of(context).scaffoldBackgroundColor,
       body: Column(
         children: [
           // ── Header ──────────────────────────────────────────────
@@ -298,25 +318,31 @@ class _MainShellState extends State<MainShell>
               left: 16,
               right: 16,
             ),
-            decoration: const BoxDecoration(
-              color: Color(0xFF2563EB),
-              borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
+            decoration: BoxDecoration(
+              color: isVeryNoisy
+                  ? const Color(0xFFEF4444)
+                  : (isDark
+                      ? const Color(0xFF1E293B)
+                      : const Color(0xFF2563EB)),
+              borderRadius:
+                  const BorderRadius.vertical(bottom: Radius.circular(24)),
               boxShadow: [
                 BoxShadow(
-                  color: Color(0x20000000),
+                  // ignore: deprecated_member_use
+                  color: Colors.black.withOpacity(isDark ? 0.3 : 0.12),
                   blurRadius: 12,
-                  offset: Offset(0, 4),
+                  offset: const Offset(0, 4),
                 )
               ],
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Row(
+                Row(
                   children: [
-                    Text('🔊', style: TextStyle(fontSize: 22)),
-                    SizedBox(width: 8),
-                    Text(
+                    Image.asset('assets/logo.png', width: 28, height: 28),
+                    const SizedBox(width: 8),
+                    const Text(
                       'Sound Monitor',
                       style: TextStyle(
                         color: Colors.white,
@@ -334,7 +360,8 @@ class _MainShellState extends State<MainShell>
                     padding:
                         const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.15),
+                      // ignore: deprecated_member_use
+                      color: Colors.white.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(30),
                     ),
                     child: Row(
@@ -378,13 +405,14 @@ class _MainShellState extends State<MainShell>
 
       // ── Bottom nav ───────────────────────────────────────────────────
       bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E293B) : Colors.white,
           boxShadow: [
             BoxShadow(
-              color: Color(0x10000000),
+              // ignore: deprecated_member_use
+              color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
               blurRadius: 12,
-              offset: Offset(0, -2),
+              offset: const Offset(0, -2),
             )
           ],
         ),
@@ -396,9 +424,10 @@ class _MainShellState extends State<MainShell>
               context.read<AppController>().setTabIndex(i);
             },
             type: BottomNavigationBarType.fixed,
-            backgroundColor: Colors.white,
+            backgroundColor: Colors.transparent,
             selectedItemColor: const Color(0xFF2563EB),
-            unselectedItemColor: const Color(0xFF94A3B8),
+            unselectedItemColor:
+                isDark ? Colors.white38 : const Color(0xFF94A3B8),
             selectedFontSize: 11,
             unselectedFontSize: 11,
             elevation: 0,

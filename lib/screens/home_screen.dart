@@ -12,6 +12,7 @@ class HomeScreen extends StatelessWidget {
     final ctrl = context.watch<AppController>();
     final db = ctrl.currentDb;
     final color = Color(AppController.dbColorValue(db));
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 100),
@@ -48,7 +49,8 @@ class HomeScreen extends StatelessWidget {
               margin: const EdgeInsets.only(bottom: 16),
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: const Color(0xFFFEE2E2),
+                color:
+                    isDark ? const Color(0xFF7F1D1D) : const Color(0xFFFEE2E2),
                 borderRadius: BorderRadius.circular(20),
                 border: const Border(
                     left: BorderSide(color: Color(0xFFEF4444), width: 5)),
@@ -60,12 +62,16 @@ class HomeScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Noise Alert!',
+                      Text('Noise Alert!',
                           style: TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 15)),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                              color: isDark ? Colors.white : Colors.black)),
                       Text(
                         'Exceeded ${ctrl.settings.noiseLimit.toStringAsFixed(0)} dB for ${ctrl.settings.alertDurationMin} min',
-                        style: const TextStyle(fontSize: 13),
+                        style: TextStyle(
+                            fontSize: 13,
+                            color: isDark ? Colors.white70 : Colors.black87),
                       ),
                     ],
                   ),
@@ -134,7 +140,8 @@ class HomeScreen extends StatelessWidget {
   void _showNearestSpots(BuildContext context, AppController ctrl) {
     if (ctrl.currentCoords == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please update your location on the map first.')),
+        const SnackBar(
+            content: Text('Please update your location on the map first.')),
       );
       return;
     }
@@ -142,7 +149,7 @@ class HomeScreen extends StatelessWidget {
     // Combine all spots and calculate distance
     final allSpots = [...ctrl.quietSpots, ...ctrl.detectedQuietSpots];
     const distanceCalc = Distance();
-    
+
     // Create a list of Map containing spot and its distance
     final spotsWithDistance = allSpots.map((spot) {
       final dist = distanceCalc.distance(
@@ -153,15 +160,17 @@ class HomeScreen extends StatelessWidget {
     }).toList();
 
     // Sort by distance ascending
-    spotsWithDistance.sort((a, b) => 
-        (a['distance'] as double).compareTo(b['distance'] as double));
+    spotsWithDistance.sort(
+        (a, b) => (a['distance'] as double).compareTo(b['distance'] as double));
 
     // Take top 3
     final top3 = spotsWithDistance.take(3).toList();
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -171,32 +180,41 @@ class HomeScreen extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Nearest Quiet Spots',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+              style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: isDark ? Colors.white : Colors.black),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Select a location to view the route on the map.',
-              style: TextStyle(color: Color(0xFF64748B), fontSize: 14),
+              style: TextStyle(
+                  color: isDark ? Colors.white70 : const Color(0xFF64748B),
+                  fontSize: 14),
             ),
             const SizedBox(height: 16),
             ...top3.map((item) {
               final spot = item['spot'] as QuietSpot;
               final dist = item['distance'] as double;
-              final distStr = dist < 1000 
-                  ? '${dist.toStringAsFixed(0)} m' 
+              final distStr = dist < 1000
+                  ? '${dist.toStringAsFixed(0)} m'
                   : '${(dist / 1000).toStringAsFixed(1)} km';
-              
+
               return ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const CircleAvatar(
                   backgroundColor: Color(0xFFEFF6FF),
-                  child: Icon(Icons.location_on_rounded, color: Color(0xFF2563EB), size: 20),
+                  child: Icon(Icons.location_on_rounded,
+                      color: Color(0xFF2563EB), size: 20),
                 ),
-                title: Text(spot.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: Text('Distance: $distStr • ${spot.avgDb.toStringAsFixed(0)} dB average'),
-                trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Color(0xFF94A3B8)),
+                title: Text(spot.name,
+                    style: const TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: Text(
+                    'Distance: $distStr • ${spot.avgDb.toStringAsFixed(0)} dB average'),
+                trailing: const Icon(Icons.arrow_forward_ios_rounded,
+                    size: 14, color: Color(0xFF94A3B8)),
                 onTap: () {
                   Navigator.pop(ctx);
                   ctrl.triggerRoute(spot);
@@ -223,21 +241,23 @@ class _DbMeterCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final pct = db > 0 ? ((db - 20) / 90).clamp(0.0, 1.0) : 0.0;
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.06),
             blurRadius: 16,
             offset: const Offset(0, 6),
           )
         ],
-        border: Border.all(color: const Color(0xFFEEF2FF)),
+        border: Border.all(
+            color: isDark ? Colors.white10 : const Color(0xFFEEF2FF)),
       ),
       child: Column(children: [
         // Big dB number
@@ -255,9 +275,11 @@ class _DbMeterCard extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 4),
-        const Text('LIVE SOUND LEVEL',
+        Text('LIVE SOUND LEVEL',
             style: TextStyle(
-                fontSize: 12, letterSpacing: 1.5, color: Color(0xFF64748B))),
+                fontSize: 12,
+                letterSpacing: 1.5,
+                color: isDark ? Colors.white38 : const Color(0xFF64748B))),
         const SizedBox(height: 14),
 
         // Progress bar
@@ -266,7 +288,8 @@ class _DbMeterCard extends StatelessWidget {
           child: LinearProgressIndicator(
             value: pct,
             minHeight: 10,
-            backgroundColor: const Color(0xFFE2E8F0),
+            backgroundColor:
+                isDark ? const Color(0xFF0F172A) : const Color(0xFFE2E8F0),
             valueColor: AlwaysStoppedAnimation<Color>(color),
           ),
         ),
@@ -320,15 +343,17 @@ class _QuietLocationsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFEEF2FF)),
+        border: Border.all(
+            color: isDark ? Colors.white10 : const Color(0xFFEEF2FF)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
             blurRadius: 12,
             offset: const Offset(0, 4),
           )
@@ -357,6 +382,7 @@ class _SpotRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final color = spot.avgDb < 50
         ? const Color(0xFF15803D)
         : spot.avgDb < 65
@@ -365,8 +391,10 @@ class _SpotRow extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12),
-      decoration: const BoxDecoration(
-          border: Border(bottom: BorderSide(color: Color(0xFFF1F5F9)))),
+      decoration: BoxDecoration(
+          border: Border(
+              bottom: BorderSide(
+                  color: isDark ? Colors.white10 : const Color(0xFFF1F5F9)))),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
