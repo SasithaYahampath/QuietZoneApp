@@ -1,1 +1,72 @@
 
+class NoiseRecord {
+  final DateTime timestamp;
+  final double db;
+  final String location;
+  final double? lat;
+  final double? lng;
+
+  const NoiseRecord({
+    required this.timestamp,
+    required this.db,
+    required this.location,
+    this.lat,
+    this.lng,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'timestamp': timestamp.toIso8601String(),
+        'db': db,
+        'location': location,
+        'lat': lat,
+        'lng': lng,
+      };
+
+  factory NoiseRecord.fromJson(Map<String, dynamic> json) => NoiseRecord(
+        timestamp: DateTime.parse(json['timestamp'] as String),
+        db: (json['db'] as num).toDouble(),
+        location: json['location'] as String,
+        lat: (json['lat'] as num?)?.toDouble(),
+        lng: (json['lng'] as num?)?.toDouble(),
+      );
+
+  String get dbLabel => '${db.toStringAsFixed(0)} dB';
+
+  String get timeLabel {
+    final now = DateTime.now();
+    final diff = now.difference(timestamp);
+    if (diff.inMinutes < 1) return 'just now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    return '${timestamp.day}/${timestamp.month} ${timestamp.hour}:${timestamp.minute.toString().padLeft(2, '0')}';
+  }
+}
+
+class QuietSpot {
+  final String name;
+  final double lat;
+  final double lng;
+  final double avgDb;
+
+  const QuietSpot({
+    required this.name,
+    required this.lat,
+    required this.lng,
+    required this.avgDb,
+  });
+
+  // ★ JSON serialization for persistence
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        'lat': lat,
+        'lng': lng,
+        'avgDb': avgDb,
+      };
+
+  factory QuietSpot.fromJson(Map<String, dynamic> json) => QuietSpot(
+        name: json['name'] as String,
+        lat: (json['lat'] as num).toDouble(),
+        lng: (json['lng'] as num).toDouble(),
+        avgDb: (json['avgDb'] as num).toDouble(),
+      );
+}
