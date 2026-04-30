@@ -13,18 +13,41 @@ class HistoryScreen extends StatelessWidget {
     final today = ctrl.todayStats;
     final week = ctrl.weekStats;
     final loc = ctrl.locationStats;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 100),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(children: [
-            Text('📊', style: TextStyle(fontSize: 20)),
-            SizedBox(width: 8),
-            Text('Noise History',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
-          ]),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Row(children: [
+                Text('📊', style: TextStyle(fontSize: 20)),
+                SizedBox(width: 8),
+                Text('Noise History',
+                    style:
+                        TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+              ]),
+              IconButton(
+                icon: const Icon(Icons.cloud_download_rounded,
+                    color: Color(0xFF2563EB)),
+                onPressed: () async {
+                  await ctrl.syncFromFirestore();
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('History synced with cloud ☁️'),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  }
+                },
+                tooltip: 'Sync with cloud',
+              ),
+            ],
+          ),
           const SizedBox(height: 16),
 
           // Stats row
@@ -45,12 +68,14 @@ class HistoryScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: isDark ? const Color(0xFF1E293B) : Colors.white,
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: const Color(0xFFEEF2FF)),
+              border: Border.all(
+                  color: isDark ? Colors.white10 : const Color(0xFFEEF2FF)),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
+                  // ignore: deprecated_member_use
+                  color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 )
@@ -102,12 +127,14 @@ class HistoryScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9),
+              color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
               borderRadius: BorderRadius.circular(20),
             ),
-            child: const Text(
+            child: Text(
               '📌 Data stored locally. No audio is saved or uploaded.',
-              style: TextStyle(fontSize: 12, color: Color(0xFF475569)),
+              style: TextStyle(
+                  fontSize: 12,
+                  color: isDark ? Colors.white70 : const Color(0xFF475569)),
             ),
           ),
         ],
@@ -145,18 +172,21 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final min = stats['min'];
     final max = stats['max'];
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: const Color(0xFFF8FAFC),
+          color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Column(children: [
           Text(label,
-              style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+              style: TextStyle(
+                  fontSize: 11,
+                  color: isDark ? Colors.white38 : const Color(0xFF64748B))),
           const SizedBox(height: 4),
           Text(
             min != null
@@ -164,8 +194,10 @@ class _StatCard extends StatelessWidget {
                 : '--',
             style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
           ),
-          const Text('dB',
-              style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+          Text('dB',
+              style: TextStyle(
+                  fontSize: 11,
+                  color: isDark ? Colors.white38 : const Color(0xFF64748B))),
         ]),
       ),
     );
@@ -178,6 +210,7 @@ class _DbChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final last20 = records.reversed.take(20).toList().reversed.toList();
     final spots = last20.asMap().entries.map((e) {
       return FlSpot(e.key.toDouble(), e.value.db);
@@ -186,12 +219,14 @@ class _DbChart extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFEEF2FF)),
+        border: Border.all(
+            color: isDark ? Colors.white10 : const Color(0xFFEEF2FF)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            // ignore: deprecated_member_use
+            color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
             blurRadius: 12,
             offset: const Offset(0, 4),
           )
@@ -271,11 +306,14 @@ class _RecordRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final color = Color(AppController.dbColorValue(record.db));
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 10),
-      decoration: const BoxDecoration(
-          border: Border(bottom: BorderSide(color: Color(0xFFEEF2FF)))),
+      decoration: BoxDecoration(
+          border: Border(
+              bottom: BorderSide(
+                  color: isDark ? Colors.white10 : const Color(0xFFEEF2FF)))),
       child: Row(children: [
         Container(
           width: 8,
@@ -300,7 +338,8 @@ class _RecordRow extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
           decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.12),
+            // ignore: deprecated_member_use
+            color: color.withOpacity(0.12),
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(record.dbLabel,
