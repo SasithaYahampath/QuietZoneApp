@@ -16,7 +16,6 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.27.0'
-          channel: 'stable'
 
       - run: flutter config --enable-web
       - run: flutter pub get
