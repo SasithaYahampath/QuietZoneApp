@@ -137,8 +137,9 @@ class _LoginScreenState extends State<LoginScreen>
                           )
                         ],
                       ),
-                      child: const Center(
-                        child: Text('🔊', style: TextStyle(fontSize: 38)),
+                      child: Center(
+                        child: Image.asset('assets/logo.png',
+                            width: 50, height: 50),
                       ),
                     ),
                     const SizedBox(height: 28),

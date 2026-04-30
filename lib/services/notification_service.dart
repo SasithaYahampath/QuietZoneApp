@@ -42,4 +42,27 @@ class NotificationService {
       ),
     );
   }
+
+  static Future<void> showInstantAlert({required double db}) async {
+    await _plugin.show(
+      2,
+      '🚨 HIGH NOISE DETECTED!',
+      'Current level: ${db.toStringAsFixed(0)} dB. It is too loud here!',
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'instant_alert',
+          'Instant Noise Alerts',
+          importance: Importance.max,
+          priority: Priority.high,
+          fullScreenIntent: true,
+          enableVibration: true,
+          playSound: true,
+        ),
+        iOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentSound: true,
+        ),
+      ),
+    );
+  }
 }
