@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:noise_meter/noise_meter.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter/services.dart';
 import '../models/noise_record.dart';
 import 'storage_service.dart';
 import 'firestore_service.dart';
@@ -24,6 +25,7 @@ class AppController extends ChangeNotifier {
   // ── Alert ──────────────────────────────────────────────────────────────────
   DateTime? _highNoiseStart;
   bool alertActive = false;
+  bool isVeryNoisy = false;
 
   // ── Routing ────────────────────────────────────────────────────────────────
   QuietSpot? spotToRoute;
@@ -49,6 +51,8 @@ class AppController extends ChangeNotifier {
   // ── History ────────────────────────────────────────────────────────────────
   List<NoiseRecord> records = [];
   Timer? _recordTimer;
+  Timer? _alertTimer;
+  int _alertCount = 0;
 
   // ── Settings ───────────────────────────────────────────────────────────────
   AppSettings settings = const AppSettings();
@@ -56,49 +60,122 @@ class AppController extends ChangeNotifier {
   // ── Quiet spots (Sri Lanka Libraries) ──────────────────────────────────────
   final List<QuietSpot> quietSpots = const [
     // Colombo & Suburbs
-    QuietSpot(name: 'Colombo Public Library', lat: 6.9116, lng: 79.8596, avgDb: 38),
-    QuietSpot(name: 'National Library of Sri Lanka', lat: 6.9061, lng: 79.8686, avgDb: 35),
-    QuietSpot(name: 'University of Colombo Library', lat: 6.9000, lng: 79.8614, avgDb: 40),
-    QuietSpot(name: 'University of Moratuwa Library', lat: 6.7969, lng: 79.9018, avgDb: 42),
-    QuietSpot(name: 'University of Kelaniya Library', lat: 6.9744, lng: 79.9161, avgDb: 40),
-    QuietSpot(name: 'NSBM Green University Library', lat: 6.8211, lng: 80.0400, avgDb: 38), // NSBM Actual Coords
-    QuietSpot(name: 'Gampaha Public Library', lat: 7.0911, lng: 79.9996, avgDb: 45),
-    QuietSpot(name: 'Negombo Public Library', lat: 7.2111, lng: 79.8386, avgDb: 45),
-    
+    QuietSpot(
+        name: 'Colombo Public Library', lat: 6.9116, lng: 79.8596, avgDb: 38),
+    QuietSpot(
+        name: 'National Library of Sri Lanka',
+        lat: 6.9061,
+        lng: 79.8686,
+        avgDb: 35),
+    QuietSpot(
+        name: 'University of Colombo Library',
+        lat: 6.9000,
+        lng: 79.8614,
+        avgDb: 40),
+    QuietSpot(
+        name: 'University of Moratuwa Library',
+        lat: 6.7969,
+        lng: 79.9018,
+        avgDb: 42),
+    QuietSpot(
+        name: 'University of Kelaniya Library',
+        lat: 6.9744,
+        lng: 79.9161,
+        avgDb: 40),
+    QuietSpot(
+        name: 'NSBM Green University Library',
+        lat: 6.8211,
+        lng: 80.0400,
+        avgDb: 38), // NSBM Actual Coords
+    QuietSpot(
+        name: 'Gampaha Public Library', lat: 7.0911, lng: 79.9996, avgDb: 45),
+    QuietSpot(
+        name: 'Negombo Public Library', lat: 7.2111, lng: 79.8386, avgDb: 45),
+
     // Central Province
-    QuietSpot(name: 'Kandy Public Library', lat: 7.2917, lng: 80.6358, avgDb: 42),
-    QuietSpot(name: 'University of Peradeniya Library', lat: 7.2573, lng: 80.5970, avgDb: 35),
-    QuietSpot(name: 'Nuwara Eliya Public Library', lat: 6.9708, lng: 80.7828, avgDb: 38),
+    QuietSpot(
+        name: 'Kandy Public Library', lat: 7.2917, lng: 80.6358, avgDb: 42),
+    QuietSpot(
+        name: 'University of Peradeniya Library',
+        lat: 7.2573,
+        lng: 80.5970,
+        avgDb: 35),
+    QuietSpot(
+        name: 'Nuwara Eliya Public Library',
+        lat: 6.9708,
+        lng: 80.7828,
+        avgDb: 38),
 
     // Northern & Eastern
-    QuietSpot(name: 'Jaffna Public Library', lat: 9.6644, lng: 80.0125, avgDb: 36),
-    QuietSpot(name: 'Batticaloa Public Library', lat: 7.7142, lng: 81.6989, avgDb: 44),
-    QuietSpot(name: 'Trincomalee Public Library', lat: 8.5711, lng: 81.2335, avgDb: 45),
+    QuietSpot(
+        name: 'Jaffna Public Library', lat: 9.6644, lng: 80.0125, avgDb: 36),
+    QuietSpot(
+        name: 'Batticaloa Public Library',
+        lat: 7.7142,
+        lng: 81.6989,
+        avgDb: 44),
+    QuietSpot(
+        name: 'Trincomalee Public Library',
+        lat: 8.5711,
+        lng: 81.2335,
+        avgDb: 45),
 
     // Southern Province
-    QuietSpot(name: 'Galle Public Library', lat: 6.0333, lng: 80.2167, avgDb: 42),
-    QuietSpot(name: 'Matara Public Library', lat: 5.9496, lng: 80.5469, avgDb: 44),
-    QuietSpot(name: 'University of Ruhuna Library', lat: 5.9381, lng: 80.5765, avgDb: 39),
+    QuietSpot(
+        name: 'Galle Public Library', lat: 6.0333, lng: 80.2167, avgDb: 42),
+    QuietSpot(
+        name: 'Matara Public Library', lat: 5.9496, lng: 80.5469, avgDb: 44),
+    QuietSpot(
+        name: 'University of Ruhuna Library',
+        lat: 5.9381,
+        lng: 80.5765,
+        avgDb: 39),
 
     // Other Major Regions
-    QuietSpot(name: 'Kurunegala Public Library', lat: 7.4851, lng: 80.3644, avgDb: 45),
-    QuietSpot(name: 'Anuradhapura Public Library', lat: 8.3122, lng: 80.4131, avgDb: 42),
-    QuietSpot(name: 'Ratnapura Public Library', lat: 6.6828, lng: 80.3992, avgDb: 45),
-    QuietSpot(name: 'Badulla Public Library', lat: 6.9890, lng: 81.0558, avgDb: 43),
+    QuietSpot(
+        name: 'Kurunegala Public Library',
+        lat: 7.4851,
+        lng: 80.3644,
+        avgDb: 45),
+    QuietSpot(
+        name: 'Anuradhapura Public Library',
+        lat: 8.3122,
+        lng: 80.4131,
+        avgDb: 42),
+    QuietSpot(
+        name: 'Ratnapura Public Library', lat: 6.6828, lng: 80.3992, avgDb: 45),
+    QuietSpot(
+        name: 'Badulla Public Library', lat: 6.9890, lng: 81.0558, avgDb: 43),
   ];
 
   List<QuietSpot> detectedQuietSpots = [];
 
   // ── Noisy spots (Factories & High Traffic) ─────────────────────────────────
   final List<QuietSpot> noisySpots = const [
-    QuietSpot(name: 'Kelaniya Tire Factory', lat: 6.9600, lng: 79.9250, avgDb: 88),
+    QuietSpot(
+        name: 'Kelaniya Tire Factory', lat: 6.9600, lng: 79.9250, avgDb: 88),
     QuietSpot(name: 'Pettah Main Market', lat: 6.9381, lng: 79.8530, avgDb: 85),
-    QuietSpot(name: 'Orugodawatta Intersection', lat: 6.9372, lng: 79.8785, avgDb: 86),
-    QuietSpot(name: 'Sapugaskanda Refinery', lat: 6.9740, lng: 79.9400, avgDb: 90),
-    QuietSpot(name: 'Biyagama Free Trade Zone', lat: 6.9535, lng: 79.9890, avgDb: 87),
-    QuietSpot(name: 'Katunayake Airport Traffic', lat: 7.1685, lng: 79.8732, avgDb: 89),
-    QuietSpot(name: 'Colombo Fort Railway Station', lat: 6.9338, lng: 79.8500, avgDb: 85),
-    QuietSpot(name: 'Kelani Bridge Traffic', lat: 6.9550, lng: 79.8755, avgDb: 88),
+    QuietSpot(
+        name: 'Orugodawatta Intersection',
+        lat: 6.9372,
+        lng: 79.8785,
+        avgDb: 86),
+    QuietSpot(
+        name: 'Sapugaskanda Refinery', lat: 6.9740, lng: 79.9400, avgDb: 90),
+    QuietSpot(
+        name: 'Biyagama Free Trade Zone', lat: 6.9535, lng: 79.9890, avgDb: 87),
+    QuietSpot(
+        name: 'Katunayake Airport Traffic',
+        lat: 7.1685,
+        lng: 79.8732,
+        avgDb: 89),
+    QuietSpot(
+        name: 'Colombo Fort Railway Station',
+        lat: 6.9338,
+        lng: 79.8500,
+        avgDb: 85),
+    QuietSpot(
+        name: 'Kelani Bridge Traffic', lat: 6.9550, lng: 79.8755, avgDb: 88),
   ];
 
   // ── Init ───────────────────────────────────────────────────────────────────
@@ -144,6 +221,16 @@ class AppController extends ChangeNotifier {
           // Print to console so you can see real‑time values
           debugPrint('📢 db = ${reading.meanDecibel.toStringAsFixed(1)}');
           currentDb = reading.meanDecibel.clamp(20.0, 110.0);
+
+          final wasVeryNoisy = isVeryNoisy;
+          isVeryNoisy = currentDb > 50;
+
+          if (isVeryNoisy && !wasVeryNoisy) {
+            _startPersistentAlert();
+          } else if (!isVeryNoisy && wasVeryNoisy) {
+            _stopPersistentAlert();
+          }
+
           _checkAlert();
           notifyListeners();
         },
@@ -199,7 +286,6 @@ class AppController extends ChangeNotifier {
     }
   }
 
-  // ── Alert ──────────────────────────────────────────────────────────────────
   void _checkAlert() {
     if (currentDb > settings.noiseLimit) {
       _highNoiseStart ??= DateTime.now();
@@ -224,17 +310,46 @@ class AppController extends ChangeNotifier {
     }
   }
 
+  // ── Persistent 30-second Alert ──────────────────────────────────────────
+  void _startPersistentAlert() {
+    _stopPersistentAlert(); // Reset any existing timer
+    _alertCount = 0;
+
+    debugPrint('🚨 STARTING 30-SECOND PERSISTENT ALERT');
+    NotificationService.showInstantAlert(db: currentDb);
+
+    _alertTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
+      if (_alertCount >= 15 || !isVeryNoisy) {
+        // 15 repeats * 2s = 30s
+        _stopPersistentAlert();
+        return;
+      }
+
+      HapticFeedback.vibrate();
+      SystemSound.play(SystemSoundType.alert);
+      _alertCount++;
+    });
+  }
+
+  void _stopPersistentAlert() {
+    _alertTimer?.cancel();
+    _alertTimer = null;
+    _alertCount = 0;
+  }
+
   // ── History & auto‑detection ───────────────────────────────────────────────
   void _addRecord(double db) {
     final record = NoiseRecord(
       timestamp: DateTime.now(),
       db: db,
       location: currentLocationName,
+      lat: currentCoords?.latitude,
+      lng: currentCoords?.longitude,
     );
     records.add(record);
     if (records.length > 500) records.removeAt(0);
     StorageService.saveRecords(records);
-    
+
     // Sync to Firestore
     FirestoreService.addNoiseRecord(record);
 
@@ -265,10 +380,10 @@ class AppController extends ChangeNotifier {
       );
       detectedQuietSpots.add(spot);
       StorageService.saveDetectedQuietSpots(detectedQuietSpots);
-      
+
       // Sync to Firestore
       FirestoreService.addQuietSpot(spot);
-      
+
       notifyListeners();
     }
   }
@@ -278,6 +393,19 @@ class AppController extends ChangeNotifier {
     await StorageService.clearRecords();
     await FirestoreService.deleteAllNoiseRecords();
     notifyListeners();
+  }
+
+  Future<void> syncFromFirestore() async {
+    final cloudRecords = await FirestoreService.fetchNoiseRecords();
+    if (cloudRecords.isNotEmpty) {
+      // cloudRecords are descending, we store ascending
+      records = cloudRecords.reversed.toList();
+      if (records.length > 500) {
+        records = records.sublist(records.length - 500);
+      }
+      await StorageService.saveRecords(records);
+      notifyListeners();
+    }
   }
 
   // ── Settings ───────────────────────────────────────────────────────────────

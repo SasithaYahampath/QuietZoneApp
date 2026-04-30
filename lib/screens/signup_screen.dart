@@ -145,8 +145,9 @@ class _SignUpScreenState extends State<SignUpScreen>
                           )
                         ],
                       ),
-                      child: const Center(
-                        child: Text('🔊', style: TextStyle(fontSize: 32)),
+                      child: Center(
+                        child: Image.asset('assets/logo.png',
+                            width: 45, height: 45),
                       ),
                     ),
                     const SizedBox(height: 20),

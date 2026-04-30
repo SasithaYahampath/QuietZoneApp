@@ -2,23 +2,31 @@ class NoiseRecord {
   final DateTime timestamp;
   final double db;
   final String location;
+  final double? lat;
+  final double? lng;
 
   const NoiseRecord({
     required this.timestamp,
     required this.db,
     required this.location,
+    this.lat,
+    this.lng,
   });
 
   Map<String, dynamic> toJson() => {
         'timestamp': timestamp.toIso8601String(),
         'db': db,
         'location': location,
+        'lat': lat,
+        'lng': lng,
       };
 
   factory NoiseRecord.fromJson(Map<String, dynamic> json) => NoiseRecord(
         timestamp: DateTime.parse(json['timestamp'] as String),
         db: (json['db'] as num).toDouble(),
         location: json['location'] as String,
+        lat: (json['lat'] as num?)?.toDouble(),
+        lng: (json['lng'] as num?)?.toDouble(),
       );
 
   String get dbLabel => '${db.toStringAsFixed(0)} dB';
