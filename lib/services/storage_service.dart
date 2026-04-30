@@ -76,12 +76,14 @@ class AppSettings {
   final int alertDurationMin;
   final bool notificationsEnabled;
   final String lastLocationName;
+  final bool isDarkMode; // ★ Added
 
   const AppSettings({
     this.noiseLimit = 50,
     this.alertDurationMin = 5,
     this.notificationsEnabled = true,
     this.lastLocationName = 'Detecting...',
+    this.isDarkMode = false, // ★ Default to light
   });
 
   AppSettings copyWith({
@@ -89,12 +91,14 @@ class AppSettings {
     int? alertDurationMin,
     bool? notificationsEnabled,
     String? lastLocationName,
+    bool? isDarkMode, // ★ Added
   }) =>
       AppSettings(
         noiseLimit: noiseLimit ?? this.noiseLimit,
         alertDurationMin: alertDurationMin ?? this.alertDurationMin,
         notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
         lastLocationName: lastLocationName ?? this.lastLocationName,
+        isDarkMode: isDarkMode ?? this.isDarkMode,
       );
 
   Map<String, dynamic> toJson() => {
@@ -102,6 +106,7 @@ class AppSettings {
         'alertDurationMin': alertDurationMin,
         'notificationsEnabled': notificationsEnabled,
         'lastLocationName': lastLocationName,
+        'isDarkMode': isDarkMode,
       };
 
   factory AppSettings.fromJson(Map<String, dynamic> json) => AppSettings(
@@ -110,5 +115,6 @@ class AppSettings {
         notificationsEnabled: (json['notificationsEnabled'] as bool?) ?? true,
         lastLocationName:
             (json['lastLocationName'] as String?) ?? 'Detecting...',
+        isDarkMode: (json['isDarkMode'] as bool?) ?? false,
       );
 }

@@ -1,0 +1,43 @@
+name: Build and Deploy Flutter Web to Firebase
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout your code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Install Flutter (🔥 THIS FIXES YOUR ERROR)
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.22.0'
+          channel: 'stable'
+
+      # 3. Enable web
+      - name: Enable Flutter Web
+        run: flutter config --enable-web
+
+      # 4. Get dependencies
+      - name: Install dependencies
+        run: flutter pub get
+
+      # 5. Build web app
+      - name: Build Flutter Web
+        run: flutter build web --release
+
+      # 6. Deploy to Firebase Hosting
+      - name: Deploy to Firebase
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          channelId: live
+          projectId: quietzone-4f8d0

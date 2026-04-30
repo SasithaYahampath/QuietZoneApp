@@ -15,20 +15,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late double _noiseLimit;
   late int _alertDuration;
   late bool _notifEnabled;
+  late bool _isDarkMode;
+  bool _isInitialized = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final s = context.read<AppController>().settings;
-    _noiseLimit = s.noiseLimit;
-    _alertDuration = s.alertDurationMin;
-    _notifEnabled = s.notificationsEnabled;
+    if (!_isInitialized) {
+      final s = context.read<AppController>().settings;
+      _noiseLimit = s.noiseLimit;
+      _alertDuration = s.alertDurationMin;
+      _notifEnabled = s.notificationsEnabled;
+      _isDarkMode = s.isDarkMode;
+      _isInitialized = true;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final ctrl = context.watch<AppController>();
-
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final user = FirebaseAuth.instance.currentUser;
 
     return SingleChildScrollView(
@@ -48,15 +54,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF2563EB), Color(0xFF7C3AED)],
+              gradient: LinearGradient(
+                colors: isDark
+                    ? [const Color(0xFF1E293B), const Color(0xFF0F172A)]
+                    : [const Color(0xFF2563EB), const Color(0xFF7C3AED)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF2563EB).withValues(alpha: 0.3),
+                  color: (isDark ? Colors.black : const Color(0xFF2563EB))
+                      // ignore: deprecated_member_use
+                      .withOpacity(0.3),
                   blurRadius: 16,
                   offset: const Offset(0, 6),
                 ),
@@ -113,6 +123,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           const SizedBox(height: 20),
 
+          // ── Appearance ──────────────────────────────────────────────────
+          _Card(children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const _Label('🌙 Dark Mode'),
+                Switch(
+                  value: _isDarkMode,
+                  onChanged: (v) => setState(() => _isDarkMode = v),
+                ),
+              ],
+            ),
+          ]),
+
+          const SizedBox(height: 16),
+
           // ── Noise Limit ──────────────────────────────────────────────────
           _Card(children: [
             const _Label('🔊 Noise Alert Limit'),
@@ -120,15 +146,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('30 dB',
-                    style: TextStyle(fontSize: 12, color: Color(0xFF94A3B8))),
+                Text('30 dB',
+                    style: TextStyle(
+                        fontSize: 12,
+                        color:
+                            isDark ? Colors.white38 : const Color(0xFF94A3B8))),
                 Text('${_noiseLimit.toStringAsFixed(0)} dB',
                     style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
                         color: Color(0xFF2563EB))),
-                const Text('80 dB',
-                    style: TextStyle(fontSize: 12, color: Color(0xFF94A3B8))),
+                Text('80 dB',
+                    style: TextStyle(
+                        fontSize: 12,
+                        color:
+                            isDark ? Colors.white38 : const Color(0xFF94A3B8))),
               ],
             ),
             Slider(
@@ -146,7 +178,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ? 'Normal — good for offices'
                       : 'Low sensitivity — only loud environments',
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+              style: TextStyle(
+                  fontSize: 12,
+                  color: isDark ? Colors.white70 : const Color(0xFF64748B)),
             ),
           ]),
 
@@ -169,15 +203,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       decoration: BoxDecoration(
                         color: selected
                             ? const Color(0xFF2563EB)
-                            : const Color(0xFFF1F5F9),
+                            : (isDark
+                                ? const Color(0xFF1E293B)
+                                : const Color(0xFFF1F5F9)),
                         borderRadius: BorderRadius.circular(30),
                       ),
                       child: Text(
                         '$min min',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color:
-                              selected ? Colors.white : const Color(0xFF475569),
+                          color: selected
+                              ? Colors.white
+                              : (isDark
+                                  ? Colors.white70
+                                  : const Color(0xFF475569)),
                           fontWeight: FontWeight.w600,
                           fontSize: 14,
                         ),
@@ -203,9 +242,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ],
             ),
-            const Text(
+            Text(
               'Receive alerts when noise exceeds your limit',
-              style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+              style: TextStyle(
+                  fontSize: 12,
+                  color: isDark ? Colors.white70 : const Color(0xFF64748B)),
             ),
           ]),
 
@@ -251,6 +292,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   noiseLimit: _noiseLimit,
                   alertDurationMin: _alertDuration,
                   notificationsEnabled: _notifEnabled,
+                  isDarkMode: _isDarkMode,
                 );
                 await ctrl.updateSettings(newSettings);
                 if (context.mounted) {
@@ -281,12 +323,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9),
+              color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
               borderRadius: BorderRadius.circular(20),
             ),
-            child: const Text(
+            child: Text(
               '🔒 Privacy: Microphone is used only for real-time dB measurement. No audio is recorded or uploaded. Location is used only for place name and map display.',
-              style: TextStyle(fontSize: 12, color: Color(0xFF475569)),
+              style: TextStyle(
+                  fontSize: 12,
+                  color: isDark ? Colors.white70 : const Color(0xFF475569)),
             ),
           ),
 
@@ -304,8 +348,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         borderRadius: BorderRadius.circular(20)),
                     title: const Text('Sign Out',
                         style: TextStyle(fontWeight: FontWeight.w700)),
-                    content:
-                        const Text('Are you sure you want to sign out?'),
+                    content: const Text('Are you sure you want to sign out?'),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(ctx, false),
@@ -352,15 +395,18 @@ class _Card extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFEEF2FF)),
+        border: Border.all(
+            color: isDark ? Colors.white10 : const Color(0xFFEEF2FF)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            // ignore: deprecated_member_use
+            color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
             blurRadius: 12,
             offset: const Offset(0, 4),
           )

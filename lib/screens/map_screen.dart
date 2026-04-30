@@ -26,6 +26,7 @@ class _MapScreenState extends State<MapScreen> {
   Widget build(BuildContext context) {
     final ctrl = context.watch<AppController>();
     final userPos = ctrl.currentCoords;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     // Center of Sri Lanka to view all libraries initially
     const defaultCenter = LatLng(7.8731, 80.7718);
 
@@ -66,8 +67,9 @@ class _MapScreenState extends State<MapScreen> {
                 ),
                 children: [
                   TileLayer(
-                    urlTemplate:
-                        'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+                    urlTemplate: isDark
+                        ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+                        : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
                     subdomains: const ['a', 'b', 'c'],
                     userAgentPackageName: 'com.example.quiet_zone_app',
                   ),
@@ -98,7 +100,8 @@ class _MapScreenState extends State<MapScreen> {
                                   boxShadow: [
                                     BoxShadow(
                                       color: const Color(0xFF22C55E)
-                                          .withValues(alpha: 0.4),
+                                          // ignore: deprecated_member_use
+                                          .withOpacity(0.4),
                                       blurRadius: 6,
                                       offset: const Offset(0, 2),
                                     )
@@ -161,7 +164,8 @@ class _MapScreenState extends State<MapScreen> {
                                   boxShadow: [
                                     BoxShadow(
                                       color: const Color(0xFF7C3AED)
-                                          .withValues(alpha: 0.4),
+                                          // ignore: deprecated_member_use
+                                          .withOpacity(0.4),
                                       blurRadius: 6,
                                       offset: const Offset(0, 2),
                                     )
@@ -224,7 +228,8 @@ class _MapScreenState extends State<MapScreen> {
                                   boxShadow: [
                                     BoxShadow(
                                       color: const Color(0xFFEF4444)
-                                          .withValues(alpha: 0.4),
+                                          // ignore: deprecated_member_use
+                                          .withOpacity(0.4),
                                       blurRadius: 6,
                                       offset: const Offset(0, 2),
                                     )
@@ -315,14 +320,14 @@ class _MapScreenState extends State<MapScreen> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9),
+              color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Column(children: [
-              _legendRow('🟢', 'Green = known quiet spots'),
-              _legendRow('🟣', 'Purple = auto‑detected spots'),
-              _legendRow('🔵', 'Blue dot = your live location'),
-              _legendRow('🔷', 'Blue line = route to selected spot'),
+              _legendRow('🟢', 'Green = known quiet spots', isDark),
+              _legendRow('🟣', 'Purple = auto‑detected spots', isDark),
+              _legendRow('🔵', 'Blue dot = your live location', isDark),
+              _legendRow('🔷', 'Blue line = route to selected spot', isDark),
             ]),
           ),
           const SizedBox(height: 12),
@@ -365,8 +370,10 @@ class _MapScreenState extends State<MapScreen> {
     final ctrl = context.read<AppController>();
     final origin = ctrl.currentCoords;
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
+      backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => Padding(
@@ -379,8 +386,10 @@ class _MapScreenState extends State<MapScreen> {
               if (isDetected) const Text('🤖 ', style: TextStyle(fontSize: 20)),
               Expanded(
                 child: Text(spot.name,
-                    style: const TextStyle(
-                        fontSize: 20, fontWeight: FontWeight.w700)),
+                    style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? Colors.white : Colors.black)),
               ),
             ]),
             const SizedBox(height: 10),
@@ -406,7 +415,9 @@ class _MapScreenState extends State<MapScreen> {
               isDetected
                   ? 'Auto‑detected by the app while monitoring.'
                   : 'Average noise level ${spot.avgDb.toStringAsFixed(0)} dB — ideal for studying or focused work.',
-              style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
+              style: TextStyle(
+                  fontSize: 14,
+                  color: isDark ? Colors.white70 : const Color(0xFF475569)),
             ),
             const SizedBox(height: 20),
 
@@ -529,13 +540,15 @@ class _MapScreenState extends State<MapScreen> {
     setState(() => _routePoints = null);
   }
 
-  Widget _legendRow(String emoji, String text) {
+  Widget _legendRow(String emoji, String text, bool isDark) {
     return Row(children: [
       Text(emoji, style: const TextStyle(fontSize: 14)),
       const SizedBox(width: 8),
       Expanded(
           child: Text(text,
-              style: const TextStyle(fontSize: 12, color: Color(0xFF475569)))),
+              style: TextStyle(
+                  fontSize: 12,
+                  color: isDark ? Colors.white70 : const Color(0xFF475569)))),
     ]);
   }
 }

@@ -31,6 +31,8 @@ class FirestoreService {
       'db': record.db,
       'location': record.location,
       'timestamp': Timestamp.fromDate(record.timestamp),
+      'lat': record.lat,
+      'lng': record.lng,
     });
   }
 
@@ -46,6 +48,8 @@ class FirestoreService {
         db: (d['db'] as num).toDouble(),
         location: d['location'] as String? ?? '',
         timestamp: (d['timestamp'] as Timestamp).toDate(),
+        lat: (d['lat'] as num?)?.toDouble(),
+        lng: (d['lng'] as num?)?.toDouble(),
       );
     }).toList();
   }
